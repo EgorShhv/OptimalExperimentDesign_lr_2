@@ -18,7 +18,7 @@ def coef_gradient_descent(n, x, p):
     fout = open("new_out.txt", "w")
     solution = 0
     iter = 0
-    while solution == 0:
+    while solution == 0 and iter < 1000:
         lambdas = 0.1
         solution = 1
         q = n - np.count_nonzero(p)
@@ -34,6 +34,17 @@ def coef_gradient_descent(n, x, p):
 
         grad /= np.linalg.norm(grad)
 
+        # Условие необходимости (5)
+        for i in range(q, n - 1):
+            not_equals = False
+            for j in range(i, n):
+                if abs(grad[j] - grad[i]) < delta:
+                    solution = 0
+                    not_equals = True
+                    break
+            if not_equals:
+                break
+
         # Вычисляем среднюю сумму компонент градиента точек, в которых p_j != 0
         # Это нужно для проверки условия о достаточности (6)
         avg = 0.0
@@ -42,29 +53,32 @@ def coef_gradient_descent(n, x, p):
                 avg += grad[i]
         avg /= n - q
 
-        for i in range(n):
-            if (p[i] != 0):
-                if abs(grad[i] - avg) > delta:
-                    solution = 0
+        # # Условие необходимости (5) НЕВЕРНОЕ
+        # for i in range(n):
+        #     if p[i] != 0:
+        #         if abs(grad[i] - avg) > delta:
+        #             solution = 0
 
-        # стр. 15. Над 1 пунктом.
+        # Условие достаточности (6)
         for j in range(n):
-            proj[j] = grad[j] - avg
+            proj[j] = grad[j] - avg    # Формула (7)
             if p[j] == 0:
-                if proj[j] > 0:
+                if grad[j] > avg:
                     solution = 0
-                else:
-                    proj[j] = 0
+                    break
+            else:
+                proj[j] = 0
 
-        if (iter % 100 == 0):
-            fout.write("iter= " + str(iter) + " ")
-            fout.write("detM= " + str(np.linalg.det(M)) + " ")
-            fout.write("|proj|= " + str(np.linalg.norm(proj)) + "\n")
+        # # Вывод информации о каждой 100-й итерации
+        # if (iter % 100 == 0):
+        #     fout.write("iter= " + str(iter) + " ")
+        #     fout.write("detM= " + str(np.linalg.det(M)) + " ")
+        #     fout.write("|proj|= " + str(np.linalg.norm(proj)) + "\n")
 
         if (solution == 0):
-            for i in range(n):
-                if (proj[i] < 0 and lambdas > - p[i] / proj[i]):
-                    lambdas = - p[i] / proj[i]
+            # for i in range(n):
+            #     if (proj[i] < 0 and lambdas > - p[i] / proj[i]):
+            #         lambdas = - p[i] / proj[i]
 
             for i in range(n):
                 p[i] += lambdas * proj[i]   # Шаг 5 в методичке
@@ -94,16 +108,19 @@ def is_optimal(D):
     return max, x1m, x2m
 
 
-m = 21
+m = 5
+
 n = m * m
+
 p = np.ones(n)
 p = p * (1.0 / n)
+
 x = np.zeros((n, 2))
 
 for i in range(0, m):
     for j in range(0, m):
-        x[i * m + j][0] = -1 + 0.1 * i
-        x[i * m + j][1] = -1 + 0.1 * j
+        x[i * m + j][0] = -1 + 0.5 * i
+        x[i * m + j][1] = -1 + 0.5 * j
 
 p, D = coef_gradient_descent(n, x, p)
 max, x1m, x2m = is_optimal(D)
